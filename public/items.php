@@ -373,14 +373,7 @@ function render_item_card(array $item, int $width = 180, ?array $taxonomy = null
 $title = '商品一覧';
 $itemCount = 0;
 $page = max(1, (int)get('page', 1));
-$per = (int)(app_config()['pagination']['per_page'] ?? 32);
-$viewport = (string)($_COOKIE['pcf_viewport'] ?? '');
-$clientHintMobile = trim((string)($_SERVER['HTTP_SEC_CH_UA_MOBILE'] ?? ''));
-$userAgent = (string)($_SERVER['HTTP_USER_AGENT'] ?? '');
-if ($viewport === 'sp' || $clientHintMobile === '?1' || ($userAgent !== '' && preg_match('/Android.*Mobile|iPhone|iPod|Windows Phone|BlackBerry|webOS/i', $userAgent))) {
-    $per = 20;
-}
-$itemsViewportMode = $per === 20 ? 'sp' : 'pc';
+$per = 32;
 $pg = paginate(0, $page, $per);
 $latestItems = [];
 $fallbackItems = [];
@@ -393,7 +386,7 @@ try {
         $pg = paginate($itemCount, $page, $per);
         $usedHomeItemKeys = [];
         $latestRows = fetch_items_with_order_fallback($pdo, [
-            'release_date DESC, id ASC',
+            'release_date DESC, updated_at DESC, id DESC',
             'date_published DESC, updated_at DESC, id DESC',
             'updated_at DESC, id DESC',
             'id DESC',
@@ -416,21 +409,6 @@ if ((int)($pg['page'] ?? 1) < (int)($pg['pages'] ?? 1)) {
 }
 require __DIR__ . '/partials/header.php';
 ?>
-<script>
-(() => {
-  if (!window.matchMedia) return;
-  const expected = window.matchMedia('(max-width: 768px)').matches ? 'sp' : 'pc';
-  const rendered = '<?= e($itemsViewportMode) ?>';
-  const current = document.cookie.split('; ').find((row) => row.startsWith('pcf_viewport='))?.split('=')[1] || '';
-  if (current !== expected) {
-    document.cookie = 'pcf_viewport=' + expected + '; path=/; max-age=86400; SameSite=Lax';
-  }
-  if (rendered !== expected) {
-    window.location.reload();
-  }
-})();
-</script>
-
 <?php if ($itemCount === 0): ?>
   <div class="card"><p>まだ商品データが同期されていません。管理画面のAPI設定から「同期実行（DB保存）」を行ってください。</p></div>
 <?php elseif ($latestItems === []): ?>
@@ -447,7 +425,7 @@ require __DIR__ . '/partials/header.php';
 <?php else: ?>
   <section class="rail-section">
     <h2>新着作品</h2>
-    <div class="rail-row rail-row--200 rail-row--wide-thumb rail-row--no-scroll"><?php foreach ($latestItems as $index => $item) { render_item_card($item, 200, null, true, $index >= 6); } ?></div>
+    <div class="pcf-light-product-grid"><?php foreach ($latestItems as $index => $item) { render_item_card($item, 200, null, true, $index >= 4); } ?></div>
     <?php pcf_render_pagination($pg, public_url('items.php')); ?>
   </section>
 <?php endif; ?>

@@ -219,9 +219,6 @@ function search_fetch_items(string $query, int $limit, int $offset): array
         $whereSql .= ' AND ' . $sourceWhere;
     }
     $orderSqlCandidates = [
-        'view_count DESC, release_date DESC, id DESC',
-        'view_count DESC, date_published DESC, id DESC',
-        'view_count DESC, id DESC',
         'release_date DESC, id DESC',
         'date_published DESC, id DESC',
         'updated_at DESC, id DESC',
@@ -272,7 +269,7 @@ function search_fetch_items(string $query, int $limit, int $offset): array
 
 $searchQuery = safe_str($_GET['q'] ?? '', 200);
 $page = normalize_int((int)($_GET['page'] ?? 1), 1, 100000);
-$limit = (int)(app_config()['pagination']['per_page'] ?? 24);
+$limit = 32;
 $offset = ($page - 1) * $limit;
 $searchRows = search_fetch_items($searchQuery, $limit, $offset);
 [$searchItems, $searchHasNext] = paginate_items($searchRows, $limit);
@@ -300,9 +297,9 @@ require __DIR__ . '/partials/header.php';
 <?php if ($searchQuery === ''): ?>
   <?php pcf_render_empty('検索キーワードを入力してください。'); ?>
 <?php elseif ($searchItems !== []): ?>
-  <section class="pcf-related-grid">
+  <section class="pcf-related-grid pcf-light-related-grid">
     <?php foreach ($searchItems as $item): ?>
-      <?php pcf_render_item_card(is_array($item) ? $item : []); ?>
+      <?php pcf_render_item_card(is_array($item) ? $item : [], 180, true); ?>
     <?php endforeach; ?>
   </section>
   <nav class="pcf-pagination" aria-label="ページネーション">
