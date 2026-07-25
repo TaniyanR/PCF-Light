@@ -268,7 +268,7 @@
 }
 
 .pcf-light-related-grid .pcf-dm-card__image-link {
-  height: 270px;
+  height: 220px;
 }
 
 .pcf-light-related-grid .pcf-dm-card__actions {
@@ -277,6 +277,39 @@
 
 @media (max-width: 900px) {
   .pcf-light-related-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.pcf-directory-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 24px;
+}
+
+.pcf-directory-link {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  background: #fff;
+  color: #1e73be;
+  font-weight: 700;
+  line-height: 1.5;
+  text-decoration: none;
+  word-break: break-word;
+  box-sizing: border-box;
+}
+
+.pcf-directory-link:hover {
+  background: #f5f8ff;
+}
+
+@media (max-width: 900px) {
+  .pcf-directory-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
