@@ -11,7 +11,11 @@ $searchQuery = trim((string)($_GET['q'] ?? ''));
 $navItems = [
     ['href' => public_url(''), 'label' => 'TOP'],
     ['href' => public_url('items.php'), 'label' => '商品一覧'],
-    ['href' => public_url('search.php'), 'label' => '商品検索'],
+    ['href' => public_url('directory.php?type=actress'), 'label' => '女優一覧'],
+    ['href' => public_url('directory.php?type=genre'), 'label' => 'ジャンル一覧'],
+    ['href' => public_url('directory.php?type=maker'), 'label' => 'メーカー一覧'],
+    ['href' => public_url('directory.php?type=label'), 'label' => 'レーベル一覧'],
+    ['href' => public_url('directory.php?type=series'), 'label' => 'シリーズ一覧'],
 ];
 $mobileMainItems = $navItems;
 $mobileInfoItems = [
@@ -67,7 +71,13 @@ try {
 </details>
 <nav class="site-nav" aria-label="グローバルナビゲーション">
     <?php foreach ($navItems as $index => $item) : ?>
-        <?php $isActive = $path === parse_url($item['href'], PHP_URL_PATH); ?>
+        <?php
+        $itemPath = (string)parse_url($item['href'], PHP_URL_PATH);
+        $itemQuery = [];
+        parse_str((string)(parse_url($item['href'], PHP_URL_QUERY) ?? ''), $itemQuery);
+        $isActive = $path === $itemPath
+            && (!isset($itemQuery['type']) || (string)($_GET['type'] ?? '') === (string)$itemQuery['type']);
+        ?>
         <?php if ($index > 0): ?><span class="site-nav__sep" aria-hidden="true"> | </span><?php endif; ?>
         <a class="<?= $isActive ? 'is-active' : '' ?>" href="<?= e($item['href']) ?>"><?= e($item['label']) ?></a>
     <?php endforeach; ?>
