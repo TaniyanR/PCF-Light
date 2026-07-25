@@ -261,6 +261,26 @@
   gap: 14px;
 }
 
+.pcf-light-related-grid .pcf-dm-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.pcf-light-related-grid .pcf-dm-card__image-link {
+  height: 270px;
+}
+
+.pcf-light-related-grid .pcf-dm-card__actions {
+  margin-top: auto;
+}
+
+@media (max-width: 900px) {
+  .pcf-light-related-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .pcf-taxonomy-card {
   display: flex;
   flex-direction: column;
