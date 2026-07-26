@@ -264,15 +264,15 @@
 .pcf-light-related-grid .pcf-dm-card {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: auto;
 }
 
 .pcf-light-related-grid .pcf-dm-card__image-link {
-  height: 220px;
+  height: 170px;
 }
 
 .pcf-light-related-grid .pcf-dm-card__actions {
-  margin-top: auto;
+  margin-top: 0;
 }
 
 @media (max-width: 900px) {
