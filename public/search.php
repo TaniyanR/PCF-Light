@@ -33,7 +33,7 @@ function search_item_has_product_source(array $item): bool
     return false;
 }
 
-function search_relation_checks(string $likeParam): array
+function search_relation_checks(string $term, int $termIndex, array &$params): array
 {
     $relations = [
         ['table' => 'item_actresses', 'column' => 'actress_name'],
@@ -46,7 +46,8 @@ function search_relation_checks(string $likeParam): array
     ];
     $checks = [];
 
-    foreach ($relations as $relation) {
+    $like = '%' . addcslashes($term, '\%_') . '%';
+    foreach ($relations as $relationIndex => $relation) {
         $table = $relation['table'];
         $column = $relation['column'];
         if (!db_table_exists($table) || !db_column_exists($table, $column)) {
@@ -64,6 +65,8 @@ function search_relation_checks(string $likeParam): array
             continue;
         }
 
+        $likeParam = ':q_relation_' . $termIndex . '_' . $relationIndex;
+        $params[$likeParam] = $like;
         $checks[] = 'EXISTS (SELECT 1 FROM `' . $table . '` r'
             . ' WHERE (' . implode(' OR ', $joins) . ')'
             . ' AND r.`' . $column . '` LIKE ' . $likeParam . " ESCAPE '\\\\')";
@@ -245,7 +248,7 @@ function search_fetch_items(string $query, int $limit, int $offset): array
             "title LIKE {$titleParam} ESCAPE '\\\\'",
             "content_id = {$contentParam}",
             "product_id = {$productParam}",
-            ...search_relation_checks($titleParam),
+            ...search_relation_checks($term, $index, $params),
         ];
         $termWhere[] = '(' . implode(' OR ', $termChecks) . ')';
     }
@@ -292,7 +295,8 @@ function search_fetch_items(string $query, int $limit, int $offset): array
             }
 
             return array_slice($collected, $offset, $limit + 1);
-        } catch (Throwable) {
+        } catch (Throwable $exception) {
+            error_log('public/search.php failed: ' . $exception->getMessage());
         }
     }
 
