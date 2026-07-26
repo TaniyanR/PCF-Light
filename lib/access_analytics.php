@@ -35,9 +35,9 @@ function analytics_visitor_hash(string $ua): string
     return hash('sha256', $visitorId . '|pinkclub');
 }
 
-function analytics_maybe_cleanup_old_logs(int $retentionDays = 730, int $batchSize = 2000): void
+function analytics_maybe_cleanup_old_logs(int $retentionDays = 730, int $batchSize = 2000, bool $forceCheck = false): void
 {
-    if (mt_rand(1, 20) !== 1) {
+    if (!$forceCheck && mt_rand(1, 20) !== 1) {
         return;
     }
 
@@ -142,8 +142,6 @@ function analytics_track_beacon(): void
     } catch (Throwable $e) {
         analytics_disable_for_request($e);
     }
-
-    analytics_maybe_cleanup_old_logs(730, 2000);
 }
 
 function analytics_log_out(string $targetUrl, string $refCode, string $path): void
