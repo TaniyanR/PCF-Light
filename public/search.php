@@ -75,6 +75,41 @@ function search_relation_checks(string $term, int $termIndex, array &$params): a
     return $checks;
 }
 
+function search_exact_relation_check(string $type, string $param): string
+{
+    $relations = [
+        'actress' => ['table' => 'item_actresses', 'column' => 'actress_name'],
+        'genre' => ['table' => 'item_genres', 'column' => 'genre_name'],
+        'maker' => ['table' => 'item_makers', 'column' => 'maker_name'],
+        'label' => ['table' => 'item_labels', 'column' => 'label_name'],
+        'series' => ['table' => 'item_series', 'column' => 'series_name'],
+    ];
+    if (!isset($relations[$type])) {
+        return '';
+    }
+
+    $table = $relations[$type]['table'];
+    $column = $relations[$type]['column'];
+    if (!db_table_exists($table) || !db_column_exists($table, $column)) {
+        return '';
+    }
+
+    $joins = [];
+    if (db_column_exists($table, 'item_id')) {
+        $joins[] = 'r.item_id = items.id';
+    }
+    if (db_column_exists($table, 'content_id')) {
+        $joins[] = 'r.content_id = items.content_id';
+    }
+    if ($joins === []) {
+        return '';
+    }
+
+    return 'EXISTS (SELECT 1 FROM `' . $table . '` r'
+        . ' WHERE (' . implode(' OR ', $joins) . ')'
+        . ' AND r.`' . $column . '` = ' . $param . ')';
+}
+
 function search_item_raw(array $item): array
 {
     $rawJson = (string)($item['raw_json'] ?? '');
@@ -222,7 +257,7 @@ function search_item_is_displayable(array $item): bool
     return true;
 }
 
-function search_fetch_items(string $query, int $limit, int $offset): array
+function search_fetch_items(string $query, int $limit, int $offset, string $exactType = ''): array
 {
     $query = trim($query);
     if ($query === '') {
@@ -235,24 +270,31 @@ function search_fetch_items(string $query, int $limit, int $offset): array
     }
 
     $params = [];
-    $termWhere = [];
-    foreach ($terms as $index => $term) {
-        $titleParam = ':q_title_' . $index;
-        $contentParam = ':q_content_id_' . $index;
-        $productParam = ':q_product_id_' . $index;
-        $like = '%' . addcslashes($term, '\%_') . '%';
-        $params[$titleParam] = $like;
-        $params[$contentParam] = $term;
-        $params[$productParam] = $term;
-        $termChecks = [
-            "title LIKE {$titleParam} ESCAPE '\\\\'",
-            "content_id = {$contentParam}",
-            "product_id = {$productParam}",
-            ...search_relation_checks($term, $index, $params),
-        ];
-        $termWhere[] = '(' . implode(' OR ', $termChecks) . ')';
+    $exactParam = ':q_exact';
+    $exactCheck = $exactType !== '' ? search_exact_relation_check($exactType, $exactParam) : '';
+    if ($exactCheck !== '') {
+        $params[$exactParam] = $query;
+        $whereSql = $exactCheck;
+    } else {
+        $termWhere = [];
+        foreach ($terms as $index => $term) {
+            $titleParam = ':q_title_' . $index;
+            $contentParam = ':q_content_id_' . $index;
+            $productParam = ':q_product_id_' . $index;
+            $like = '%' . addcslashes($term, '\%_') . '%';
+            $params[$titleParam] = $like;
+            $params[$contentParam] = $term;
+            $params[$productParam] = $term;
+            $termChecks = [
+                "title LIKE {$titleParam} ESCAPE '\\\\'",
+                "content_id = {$contentParam}",
+                "product_id = {$productParam}",
+                ...search_relation_checks($term, $index, $params),
+            ];
+            $termWhere[] = '(' . implode(' OR ', $termChecks) . ')';
+        }
+        $whereSql = '(' . implode(' OR ', $termWhere) . ')';
     }
-    $whereSql = '(' . implode(' OR ', $termWhere) . ')';
     $orderSqlCandidates = [
         'release_date DESC, id DESC',
         'date_published DESC, id DESC',
@@ -304,10 +346,14 @@ function search_fetch_items(string $query, int $limit, int $offset): array
 }
 
 $searchQuery = safe_str($_GET['q'] ?? '', 200);
+$searchType = safe_str($_GET['type'] ?? '', 20);
+if (!in_array($searchType, ['actress', 'genre', 'maker', 'label', 'series'], true)) {
+    $searchType = '';
+}
 $page = normalize_int((int)($_GET['page'] ?? 1), 1, 100000);
 $limit = 32;
 $offset = ($page - 1) * $limit;
-$searchRows = search_fetch_items($searchQuery, $limit, $offset);
+$searchRows = search_fetch_items($searchQuery, $limit, $offset, $searchType);
 [$searchItems, $searchHasNext] = paginate_items($searchRows, $limit);
 
 $title = '検索結果';
@@ -316,15 +362,18 @@ $canonicalQuery = [];
 if ($searchQuery !== '') {
     $canonicalQuery['q'] = $searchQuery;
 }
+if ($searchType !== '') {
+    $canonicalQuery['type'] = $searchType;
+}
 if ($page > 1) {
     $canonicalQuery['page'] = $page;
 }
 $canonicalUrl = public_url('search.php') . ($canonicalQuery !== [] ? '?' . http_build_query($canonicalQuery) : '');
 if ($page > 1) {
-    $relPrev = public_url('search.php') . '?' . http_build_query(['q' => $searchQuery, 'page' => $page - 1]);
+    $relPrev = public_url('search.php') . '?' . http_build_query(['q' => $searchQuery, 'type' => $searchType, 'page' => $page - 1]);
 }
 if ($searchHasNext) {
-    $relNext = public_url('search.php') . '?' . http_build_query(['q' => $searchQuery, 'page' => $page + 1]);
+    $relNext = public_url('search.php') . '?' . http_build_query(['q' => $searchQuery, 'type' => $searchType, 'page' => $page + 1]);
 }
 require __DIR__ . '/partials/header.php';
 ?>
@@ -340,11 +389,11 @@ require __DIR__ . '/partials/header.php';
   </section>
   <nav class="pcf-pagination" aria-label="ページネーション">
     <?php if ($page > 1): ?>
-      <a class="pcf-pagination__link" href="<?= e(public_url('search.php') . '?' . http_build_query(['q' => $searchQuery, 'page' => $page - 1])) ?>">前へ</a>
+      <a class="pcf-pagination__link" href="<?= e(public_url('search.php') . '?' . http_build_query(['q' => $searchQuery, 'type' => $searchType, 'page' => $page - 1])) ?>">前へ</a>
     <?php endif; ?>
     <span class="pcf-pagination__link is-current"><?= e((string)$page) ?></span>
     <?php if ($searchHasNext): ?>
-      <a class="pcf-pagination__link" href="<?= e(public_url('search.php') . '?' . http_build_query(['q' => $searchQuery, 'page' => $page + 1])) ?>">次へ</a>
+      <a class="pcf-pagination__link" href="<?= e(public_url('search.php') . '?' . http_build_query(['q' => $searchQuery, 'type' => $searchType, 'page' => $page + 1])) ?>">次へ</a>
     <?php endif; ?>
   </nav>
 <?php else: ?>
