@@ -110,7 +110,7 @@ require __DIR__ . '/partials/header.php';
         <h2 class="pcf-section-title"><?= e($kana) ?>行</h2>
         <div class="pcf-list-card__meta pcf-chip-list">
           <?php foreach ($groupNames as $name): ?>
-            <a class="pcf-chip" href="<?= e(public_url('search.php') . '?' . http_build_query(['q' => $name])) ?>"><?= e($name) ?></a>
+            <a class="pcf-chip" href="<?= e(public_url('search.php') . '?' . http_build_query(['q' => $name, 'type' => $type])) ?>"><?= e($name) ?></a>
           <?php endforeach; ?>
         </div>
       </section>
@@ -123,7 +123,7 @@ require __DIR__ . '/partials/header.php';
           <div class="pcf-list-card__meta pcf-chip-list">
             <strong><?= e($letter) ?></strong>
             <?php foreach ($groupNames as $name): ?>
-              <a class="pcf-chip" href="<?= e(public_url('search.php') . '?' . http_build_query(['q' => $name])) ?>"><?= e($name) ?></a>
+              <a class="pcf-chip" href="<?= e(public_url('search.php') . '?' . http_build_query(['q' => $name, 'type' => $type])) ?>"><?= e($name) ?></a>
             <?php endforeach; ?>
           </div>
         <?php endforeach; ?>
@@ -135,7 +135,7 @@ require __DIR__ . '/partials/header.php';
         <h2 class="pcf-section-title">その他</h2>
         <div class="pcf-list-card__meta pcf-chip-list">
           <?php foreach ($otherNames as $name): ?>
-            <a class="pcf-chip" href="<?= e(public_url('search.php') . '?' . http_build_query(['q' => $name])) ?>"><?= e($name) ?></a>
+            <a class="pcf-chip" href="<?= e(public_url('search.php') . '?' . http_build_query(['q' => $name, 'type' => $type])) ?>"><?= e($name) ?></a>
           <?php endforeach; ?>
         </div>
       </section>
