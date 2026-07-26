@@ -8,8 +8,8 @@ require_once __DIR__ . '/../lib/repository.php';
 
 function search_item_has_product_source(array $item): bool
 {
-    if (array_key_exists('item_source', $item)) {
-        return (string)($item['item_source'] ?? '') === 'fanza_product';
+    if ((string)($item['item_source'] ?? '') === 'fanza_product') {
+        return true;
     }
 
     foreach (['affiliate_url', 'service_code', 'floor_code', 'sample_movie_url_476', 'sample_movie_url_560', 'sample_movie_url_644', 'sample_movie_url_720'] as $key) {
@@ -31,6 +31,45 @@ function search_item_has_product_source(array $item): bool
     }
 
     return false;
+}
+
+function search_relation_checks(string $likeParam): array
+{
+    $relations = [
+        ['table' => 'item_actresses', 'column' => 'actress_name'],
+        ['table' => 'item_genres', 'column' => 'genre_name'],
+        ['table' => 'item_makers', 'column' => 'maker_name'],
+        ['table' => 'item_labels', 'column' => 'label_name'],
+        ['table' => 'item_series', 'column' => 'series_name'],
+        ['table' => 'item_directors', 'column' => 'director_name'],
+        ['table' => 'item_authors', 'column' => 'author_name'],
+    ];
+    $checks = [];
+
+    foreach ($relations as $relation) {
+        $table = $relation['table'];
+        $column = $relation['column'];
+        if (!db_table_exists($table) || !db_column_exists($table, $column)) {
+            continue;
+        }
+
+        $joins = [];
+        if (db_column_exists($table, 'item_id')) {
+            $joins[] = 'r.item_id = items.id';
+        }
+        if (db_column_exists($table, 'content_id')) {
+            $joins[] = 'r.content_id = items.content_id';
+        }
+        if ($joins === []) {
+            continue;
+        }
+
+        $checks[] = 'EXISTS (SELECT 1 FROM `' . $table . '` r'
+            . ' WHERE (' . implode(' OR ', $joins) . ')'
+            . ' AND r.`' . $column . '` LIKE ' . $likeParam . " ESCAPE '\\\\')";
+    }
+
+    return $checks;
 }
 
 function search_item_raw(array $item): array
@@ -202,22 +241,15 @@ function search_fetch_items(string $query, int $limit, int $offset): array
         $params[$titleParam] = $like;
         $params[$contentParam] = $term;
         $params[$productParam] = $term;
-        $relationChecks = [
-            "EXISTS (SELECT 1 FROM item_actresses r WHERE r.item_id = items.id AND r.actress_name LIKE {$titleParam} ESCAPE '\\\\')",
-            "EXISTS (SELECT 1 FROM item_genres r WHERE r.item_id = items.id AND r.genre_name LIKE {$titleParam} ESCAPE '\\\\')",
-            "EXISTS (SELECT 1 FROM item_makers r WHERE r.item_id = items.id AND r.maker_name LIKE {$titleParam} ESCAPE '\\\\')",
-            "EXISTS (SELECT 1 FROM item_labels r WHERE r.item_id = items.id AND r.label_name LIKE {$titleParam} ESCAPE '\\\\')",
-            "EXISTS (SELECT 1 FROM item_series r WHERE r.item_id = items.id AND r.series_name LIKE {$titleParam} ESCAPE '\\\\')",
-            "EXISTS (SELECT 1 FROM item_directors r WHERE r.item_id = items.id AND r.director_name LIKE {$titleParam} ESCAPE '\\\\')",
-            "EXISTS (SELECT 1 FROM item_authors r WHERE r.item_id = items.id AND r.author_name LIKE {$titleParam} ESCAPE '\\\\')",
+        $termChecks = [
+            "title LIKE {$titleParam} ESCAPE '\\\\'",
+            "content_id = {$contentParam}",
+            "product_id = {$productParam}",
+            ...search_relation_checks($titleParam),
         ];
-        $termWhere[] = "(title LIKE {$titleParam} ESCAPE '\\\\' OR content_id = {$contentParam} OR product_id = {$productParam} OR " . implode(' OR ', $relationChecks) . ')';
+        $termWhere[] = '(' . implode(' OR ', $termChecks) . ')';
     }
     $whereSql = '(' . implode(' OR ', $termWhere) . ')';
-    $sourceWhere = function_exists('items_product_source_where') ? items_product_source_where() : '';
-    if ($sourceWhere !== '') {
-        $whereSql .= ' AND ' . $sourceWhere;
-    }
     $orderSqlCandidates = [
         'release_date DESC, id DESC',
         'date_published DESC, id DESC',
