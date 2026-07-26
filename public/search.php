@@ -132,7 +132,87 @@ function search_item_affiliate_url(array $item): string
     return trim((string)($raw['affiliateURL'] ?? ''));
 }
 
-function search_item_matches_partner_rss(array $item): bool
+function search_partner_rss_lookup(array $items): ?array
+{
+    $titles = [];
+    $urls = [];
+    $images = [];
+
+    foreach ($items as $item) {
+        $title = trim(pcf_item_title($item));
+        $url = trim((string)($item['url'] ?? ''));
+        $affiliateUrl = search_item_affiliate_url($item);
+        $imageSmall = trim((string)($item['image_small'] ?? ''));
+        $imageLarge = trim((string)($item['image_large'] ?? ''));
+
+        if ($title !== '') {
+            $titles[$title] = true;
+        }
+        foreach ([$url, $affiliateUrl] as $candidateUrl) {
+            if ($candidateUrl !== '') {
+                $urls[$candidateUrl] = true;
+            }
+        }
+        foreach ([$imageSmall, $imageLarge] as $candidateImage) {
+            if ($candidateImage !== '') {
+                $images[$candidateImage] = true;
+            }
+        }
+    }
+
+    $where = [];
+    $params = [];
+    foreach ([
+        'title' => array_keys($titles),
+        'url' => array_keys($urls),
+        'image_url' => array_keys($images),
+    ] as $column => $values) {
+        if ($values === []) {
+            continue;
+        }
+
+        $placeholders = [];
+        foreach ($values as $index => $value) {
+            $placeholder = ':rss_' . $column . '_' . $index;
+            $placeholders[] = $placeholder;
+            $params[$placeholder] = $value;
+        }
+        $where[] = $column . ' IN (' . implode(', ', $placeholders) . ')';
+    }
+
+    if ($where === []) {
+        return ['titles' => [], 'urls' => [], 'images' => []];
+    }
+
+    try {
+        $stmt = db()->prepare(
+            'SELECT title, url, image_url FROM rss_items WHERE ' . implode(' OR ', $where)
+        );
+        $stmt->execute($params);
+
+        $lookup = ['titles' => [], 'urls' => [], 'images' => []];
+        foreach ($stmt->fetchAll() ?: [] as $row) {
+            $title = trim((string)($row['title'] ?? ''));
+            $url = trim((string)($row['url'] ?? ''));
+            $image = trim((string)($row['image_url'] ?? ''));
+            if ($title !== '') {
+                $lookup['titles'][$title] = true;
+            }
+            if ($url !== '') {
+                $lookup['urls'][$url] = true;
+            }
+            if ($image !== '') {
+                $lookup['images'][$image] = true;
+            }
+        }
+
+        return $lookup;
+    } catch (Throwable) {
+        return null;
+    }
+}
+
+function search_item_matches_partner_rss(array $item, ?array $lookup = null): bool
 {
     $title = trim(pcf_item_title($item));
     $url = trim((string)($item['url'] ?? ''));
@@ -142,6 +222,14 @@ function search_item_matches_partner_rss(array $item): bool
 
     if ($title === '' && $url === '' && $affiliateUrl === '' && $imageSmall === '' && $imageLarge === '') {
         return false;
+    }
+
+    if ($lookup !== null) {
+        return isset($lookup['titles'][$title])
+            || isset($lookup['urls'][$url])
+            || isset($lookup['urls'][$affiliateUrl])
+            || isset($lookup['images'][$imageSmall])
+            || isset($lookup['images'][$imageLarge]);
     }
 
     try {
@@ -236,9 +324,9 @@ function search_item_matches_query(array $item, string $query): bool
     return false;
 }
 
-function search_item_is_displayable(array $item): bool
+function search_item_is_displayable(array $item, ?array $rssLookup = null): bool
 {
-    if (search_item_matches_partner_rss($item)) {
+    if (search_item_matches_partner_rss($item, $rssLookup)) {
         return false;
     }
 
@@ -324,7 +412,11 @@ function search_fetch_items(string $query, int $limit, int $offset, string $exac
                 }
 
                 $rawFetched = count($chunk);
-                $chunk = array_values(array_filter($chunk, static fn(array $row): bool => search_item_is_displayable($row)));
+                $rssLookup = search_partner_rss_lookup($chunk);
+                $chunk = array_values(array_filter(
+                    $chunk,
+                    static fn(array $row): bool => search_item_is_displayable($row, $rssLookup)
+                ));
                 $collected = dedupe_items_by_key(array_merge($collected, $chunk));
                 if (count($collected) >= $targetCount) {
                     break;
