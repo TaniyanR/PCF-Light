@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_bootstrap.php';
+require_once __DIR__ . '/partials/public_ui.php';
 
 $directoryTypes = [
     'actress' => ['title' => '女優一覧', 'table' => 'item_actresses', 'column' => 'actress_name'],
