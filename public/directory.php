@@ -20,11 +20,7 @@ if (!isset($directoryTypes[$type])) {
 }
 
 $directory = $directoryTypes[$type];
-$page = max(1, (int)($_GET['page'] ?? 1));
-$perPage = 200;
 $names = [];
-$total = 0;
-$pages = 1;
 
 try {
     $pdo = db();
@@ -32,23 +28,14 @@ try {
     $column = $directory['column'];
 
     if (db_table_exists($table)) {
-        $total = (int)$pdo->query(
-            'SELECT COUNT(DISTINCT `' . $column . '`) FROM `' . $table . '` WHERE `' . $column . '` IS NOT NULL AND `' . $column . '` <> ""'
-        )->fetchColumn();
-        $pages = max(1, (int)ceil($total / $perPage));
-        $page = min($page, $pages);
-        $offset = ($page - 1) * $perPage;
-
         $stmt = $pdo->prepare(
             'SELECT `' . $column . '` AS name
              FROM `' . $table . '`
              WHERE `' . $column . '` IS NOT NULL AND `' . $column . '` <> ""
              GROUP BY `' . $column . '`
              ORDER BY `' . $column . '` ASC
-             LIMIT :limit OFFSET :offset'
+             LIMIT 20000'
         );
-        $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
         $names = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
@@ -56,19 +43,44 @@ try {
     error_log('public/directory.php failed: ' . $exception->getMessage());
 }
 
+$kanaOrder = ['あ', 'か', 'さ', 'た', 'な', 'は', 'ま', 'や', 'ら', 'わ'];
+$kanaGroups = array_fill_keys($kanaOrder, []);
+$alphaGroups = [];
+$otherNames = [];
+
+foreach ($names as $row) {
+    $name = trim((string)($row['name'] ?? ''));
+    if ($name === '') {
+        continue;
+    }
+
+    $first = mb_substr($name, 0, 1, 'UTF-8');
+    $hiragana = mb_convert_kana($first, 'c', 'UTF-8');
+    $kana = '';
+    if (preg_match('/^[ぁ-お]/u', $hiragana)) { $kana = 'あ'; }
+    elseif (preg_match('/^[か-ご]/u', $hiragana)) { $kana = 'か'; }
+    elseif (preg_match('/^[さ-ぞ]/u', $hiragana)) { $kana = 'さ'; }
+    elseif (preg_match('/^[た-ど]/u', $hiragana)) { $kana = 'た'; }
+    elseif (preg_match('/^[な-の]/u', $hiragana)) { $kana = 'な'; }
+    elseif (preg_match('/^[は-ぽ]/u', $hiragana)) { $kana = 'は'; }
+    elseif (preg_match('/^[ま-も]/u', $hiragana)) { $kana = 'ま'; }
+    elseif (preg_match('/^[や-よ]/u', $hiragana)) { $kana = 'や'; }
+    elseif (preg_match('/^[ら-ろ]/u', $hiragana)) { $kana = 'ら'; }
+    elseif (preg_match('/^[わ-ん]/u', $hiragana)) { $kana = 'わ'; }
+
+    if ($kana !== '') {
+        $kanaGroups[$kana][] = $name;
+    } elseif (preg_match('/^[A-Za-z]/', $first)) {
+        $alphaGroups[strtoupper($first)][] = $name;
+    } else {
+        $otherNames[] = $name;
+    }
+}
+ksort($alphaGroups);
+
 $title = $directory['title'];
 $pageDescription = $directory['title'] . 'です。名前を選ぶと該当商品の検索結果を表示します。';
-$canonicalQuery = ['type' => $type];
-if ($page > 1) {
-    $canonicalQuery['page'] = $page;
-}
-$canonicalUrl = public_url('directory.php') . '?' . http_build_query($canonicalQuery);
-if ($page > 1) {
-    $relPrev = public_url('directory.php') . '?' . http_build_query(['type' => $type, 'page' => $page - 1]);
-}
-if ($page < $pages) {
-    $relNext = public_url('directory.php') . '?' . http_build_query(['type' => $type, 'page' => $page + 1]);
-}
+$canonicalUrl = public_url('directory.php') . '?' . http_build_query(['type' => $type]);
 
 require __DIR__ . '/partials/header.php';
 ?>
@@ -77,24 +89,58 @@ require __DIR__ . '/partials/header.php';
 <?php if ($names === []): ?>
   <?php pcf_render_empty('表示できるデータがありません。商品APIの同期後に自動で追加されます。'); ?>
 <?php else: ?>
-  <section class="pcf-directory-grid">
-    <?php foreach ($names as $row): ?>
-      <?php $name = trim((string)($row['name'] ?? '')); ?>
-      <?php if ($name !== ''): ?>
-        <a class="pcf-directory-link" href="<?= e(public_url('search.php') . '?' . http_build_query(['q' => $name])) ?>"><?= e($name) ?></a>
+  <nav class="pcf-index-nav" aria-label="一覧内メニュー">
+    <?php foreach ($kanaGroups as $kana => $groupNames): ?>
+      <?php if ($groupNames !== []): ?>
+        <a class="pcf-index-nav__item" href="#index-<?= e($kana) ?>"><?= e($kana) ?>行</a>
       <?php endif; ?>
     <?php endforeach; ?>
-  </section>
-
-  <nav class="pcf-pagination" aria-label="ページネーション">
-    <?php if ($page > 1): ?>
-      <a class="pcf-pagination__link" href="<?= e(public_url('directory.php') . '?' . http_build_query(['type' => $type, 'page' => $page - 1])) ?>">前へ</a>
+    <?php if ($alphaGroups !== []): ?>
+      <a class="pcf-index-nav__item" href="#index-alpha">A〜Z</a>
     <?php endif; ?>
-    <span class="pcf-pagination__link is-current"><?= e((string)$page) ?> / <?= e((string)$pages) ?></span>
-    <?php if ($page < $pages): ?>
-      <a class="pcf-pagination__link" href="<?= e(public_url('directory.php') . '?' . http_build_query(['type' => $type, 'page' => $page + 1])) ?>">次へ</a>
+    <?php if ($otherNames !== []): ?>
+      <a class="pcf-index-nav__item" href="#index-other">その他</a>
     <?php endif; ?>
   </nav>
+
+  <div class="pcf-kana-directory">
+    <?php foreach ($kanaGroups as $kana => $groupNames): ?>
+      <?php if ($groupNames === []): continue; endif; ?>
+      <section class="pcf-index-block" id="index-<?= e($kana) ?>" style="content-visibility:auto;contain-intrinsic-size:500px;">
+        <h2 class="pcf-section-title"><?= e($kana) ?>行</h2>
+        <div class="pcf-list-card__meta pcf-chip-list">
+          <?php foreach ($groupNames as $name): ?>
+            <a class="pcf-chip" href="<?= e(public_url('search.php') . '?' . http_build_query(['q' => $name])) ?>"><?= e($name) ?></a>
+          <?php endforeach; ?>
+        </div>
+      </section>
+    <?php endforeach; ?>
+
+    <?php if ($alphaGroups !== []): ?>
+      <section class="pcf-index-block" id="index-alpha" style="content-visibility:auto;contain-intrinsic-size:700px;">
+        <h2 class="pcf-section-title">A〜Z</h2>
+        <?php foreach ($alphaGroups as $letter => $groupNames): ?>
+          <div class="pcf-list-card__meta pcf-chip-list">
+            <strong><?= e($letter) ?></strong>
+            <?php foreach ($groupNames as $name): ?>
+              <a class="pcf-chip" href="<?= e(public_url('search.php') . '?' . http_build_query(['q' => $name])) ?>"><?= e($name) ?></a>
+            <?php endforeach; ?>
+          </div>
+        <?php endforeach; ?>
+      </section>
+    <?php endif; ?>
+
+    <?php if ($otherNames !== []): ?>
+      <section class="pcf-index-block" id="index-other" style="content-visibility:auto;contain-intrinsic-size:500px;">
+        <h2 class="pcf-section-title">その他</h2>
+        <div class="pcf-list-card__meta pcf-chip-list">
+          <?php foreach ($otherNames as $name): ?>
+            <a class="pcf-chip" href="<?= e(public_url('search.php') . '?' . http_build_query(['q' => $name])) ?>"><?= e($name) ?></a>
+          <?php endforeach; ?>
+        </div>
+      </section>
+    <?php endif; ?>
+  </div>
 <?php endif; ?>
 
 <?php require __DIR__ . '/partials/footer.php'; ?>
