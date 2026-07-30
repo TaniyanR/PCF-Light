@@ -25,7 +25,7 @@ return [
         'debug' => false,
     ],
     'site' => [
-        'title' => 'PCF-Light',
+        'title' => 'PinkClub-FL',
         // 例: 'https://example.com'（末尾スラッシュなし）
         'base_url' => '',
     ],
