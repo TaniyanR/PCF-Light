@@ -537,8 +537,8 @@ body.admin-page .admin-menu__child .admin-menu__link{padding-left:28px;font-weig
 .rail-row--tall-cards .rail-card .rail-card__noimage{height:340px !important}
 .rail-row--tall-cards.rail-row--wide-thumb .rail-card .thumb{aspect-ratio:auto;height:340px;object-fit:cover}
 
-/* PCF-Light: fixed 4 x 8 product grid without horizontal scrolling */
-.pcf-light-product-grid{
+/* PinkClub-FL: fixed 4 x 8 product grid without horizontal scrolling */
+.pinkclub-fl-product-grid{
   display:grid;
   grid-template-columns:repeat(4,minmax(0,1fr));
   gap:18px;
@@ -546,7 +546,7 @@ body.admin-page .admin-menu__child .admin-menu__link{padding-left:28px;font-weig
   overflow:visible;
   align-items:start;
 }
-.pcf-light-product-grid .rail-card{
+.pinkclub-fl-product-grid .rail-card{
   display:flex;
   width:100% !important;
   min-width:0 !important;
@@ -558,7 +558,7 @@ body.admin-page .admin-menu__child .admin-menu__link{padding-left:28px;font-weig
   background:#fff;
   box-sizing:border-box;
 }
-.pcf-light-product-grid .rail-card > a:first-child{
+.pinkclub-fl-product-grid .rail-card > a:first-child{
   display:flex;
   align-items:center;
   justify-content:center;
@@ -567,8 +567,8 @@ body.admin-page .admin-menu__child .admin-menu__link{padding-left:28px;font-weig
   overflow:hidden;
   background:#fff;
 }
-.pcf-light-product-grid .rail-card .thumb,
-.pcf-light-product-grid .rail-card .rail-card__noimage{
+.pinkclub-fl-product-grid .rail-card .thumb,
+.pinkclub-fl-product-grid .rail-card .rail-card__noimage{
   display:block;
   width:100% !important;
   min-width:0 !important;
@@ -578,18 +578,18 @@ body.admin-page .admin-menu__child .admin-menu__link{padding-left:28px;font-weig
   object-position:center;
   background:#fff;
 }
-.pcf-light-product-grid .rail-card__title{
+.pinkclub-fl-product-grid .rail-card__title{
   min-height:calc(1.5em * 3);
   max-height:calc(1.5em * 3);
   line-height:1.5;
   -webkit-line-clamp:3;
 }
-.pcf-light-product-grid .sample-buttons{margin-top:0}
+.pinkclub-fl-product-grid .sample-buttons{margin-top:0}
 @media (max-width:900px){
-  .pcf-light-product-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-  .pcf-light-product-grid .rail-card > a:first-child,
-  .pcf-light-product-grid .rail-card .thumb,
-  .pcf-light-product-grid .rail-card .rail-card__noimage{height:150px !important}
+  .pinkclub-fl-product-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .pinkclub-fl-product-grid .rail-card > a:first-child,
+  .pinkclub-fl-product-grid .rail-card .thumb,
+  .pinkclub-fl-product-grid .rail-card .rail-card__noimage{height:150px !important}
 }
 .rail-card__title{
   width:100%;
