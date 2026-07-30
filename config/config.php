@@ -152,7 +152,7 @@ if ($configuredBaseUrl !== '') {
 }
 
 if (!defined('APP_NAME')) {
-    define('APP_NAME', 'PCF-Light');
+    define('APP_NAME', 'PinkClub-FL');
 }
 if (!defined('BASE_URL')) {
     define('BASE_URL', $baseUrl);

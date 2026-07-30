@@ -425,7 +425,7 @@ require __DIR__ . '/partials/header.php';
 <?php else: ?>
   <section class="rail-section">
     <h2>新着作品</h2>
-    <div class="pcf-light-product-grid"><?php foreach ($latestItems as $index => $item) { render_item_card($item, 200, null, true, $index >= 4); } ?></div>
+    <div class="pinkclub-fl-product-grid"><?php foreach ($latestItems as $index => $item) { render_item_card($item, 200, null, true, $index >= 4); } ?></div>
     <?php pcf_render_pagination($pg, public_url('items.php')); ?>
   </section>
 <?php endif; ?>

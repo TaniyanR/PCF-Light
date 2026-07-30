@@ -261,22 +261,22 @@
   gap: 14px;
 }
 
-.pcf-light-related-grid .pcf-dm-card {
+.pinkclub-fl-related-grid .pcf-dm-card {
   display: flex;
   flex-direction: column;
   height: auto;
 }
 
-.pcf-light-related-grid .pcf-dm-card__image-link {
+.pinkclub-fl-related-grid .pcf-dm-card__image-link {
   height: 170px;
 }
 
-.pcf-light-related-grid .pcf-dm-card__actions {
+.pinkclub-fl-related-grid .pcf-dm-card__actions {
   margin-top: 0;
 }
 
 @media (max-width: 900px) {
-  .pcf-light-related-grid {
+  .pinkclub-fl-related-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

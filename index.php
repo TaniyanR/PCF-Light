@@ -411,9 +411,9 @@ require __DIR__ . '/public/partials/header.php';
     <p><a class="button button--primary" href="<?= e(public_url('items.php')) ?>">商品一覧を見る</a></p>
   </div>
 <?php else: ?>
-  <section class="rail-section pcf-light-product-section">
+  <section class="rail-section pinkclub-fl-product-section">
     <h2>新着作品</h2>
-    <div class="pcf-light-product-grid">
+    <div class="pinkclub-fl-product-grid">
       <?php foreach ($latestItems as $index => $item): ?>
         <?php render_item_card($item, 200, null, true, $index >= 4); ?>
       <?php endforeach; ?>

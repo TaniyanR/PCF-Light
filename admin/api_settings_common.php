@@ -155,7 +155,7 @@ require __DIR__ . '/includes/header.php';
 ?>
 <section class="card">
   <h1><?= e($pageTitle) ?></h1>
-  <p>PCF-Lightでは商品情報APIだけを使用します。ここで商品取得用の APIID / アフィリエイトIDを設定します。</p>
+  <p>PinkClub-FLでは商品情報APIだけを使用します。ここで商品取得用の APIID / アフィリエイトIDを設定します。</p>
 
   <?php if ($message !== ''): ?>
     <div class="admin-notice <?= $messageType === 'success' ? 'admin-notice--success' : 'admin-notice--error' ?>">

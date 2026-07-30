@@ -1,4 +1,4 @@
-# PCF-Light
+# PinkClub-FL
 
 主要機能に絞って軽量化したFANZAアフィリエイト商品サイトです。
 
@@ -79,14 +79,14 @@
 - APIID
 - アフィリエイトID
 
-PCF-Lightは商品情報API（ItemList）だけを呼び出します。ジャンル・女優・シリーズなどは、商品情報APIの`iteminfo`に含まれる情報から保存します。
+PinkClub-FLは商品情報API（ItemList）だけを呼び出します。ジャンル・女優・シリーズなどは、商品情報APIの`iteminfo`に含まれる情報から保存します。
 
 ## 自動更新
 
 自動更新はcron専用です。公開ページや管理画面へのアクセスでは商品同期を開始しません。
 
 ```bash
-php /path/to/PCF-Light/scripts/auto_import.php
+php /path/to/PinkClub-FL/scripts/auto_import.php
 ```
 
 推奨cron間隔は10分です。実際の商品取得間隔と取得件数は管理画面から設定できます。
