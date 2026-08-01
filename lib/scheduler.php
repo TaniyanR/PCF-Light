@@ -288,10 +288,12 @@ function scheduler_seed_job_state(PDO $pdo): void
     }
 }
 
-function maybe_run_scheduled_jobs(): void
+function maybe_run_scheduled_jobs(): array
 {
     $result = scheduler_tick();
     if (($result['status'] ?? '') === 'error') {
         throw new RuntimeException((string)($result['message'] ?? 'scheduler error'));
     }
+
+    return $result;
 }
