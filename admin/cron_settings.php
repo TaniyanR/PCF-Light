@@ -10,7 +10,7 @@ $siteRoot = realpath(dirname($publicRoot)) ?: dirname($publicRoot);
 $cronTargetFile = $publicRoot . '/scripts/auto_import.php';
 $cronPhpCli = '/usr/bin/php8.3';
 $cronLogFile = $siteRoot . '/cron_auto_import.log';
-$cronCommandExample = $cronPhpCli . ' ' . $cronTargetFile . ' >> ' . $cronLogFile . ' 2>&1';
+$cronCommandExample = 'cd ' . escapeshellarg($publicRoot) . ' && ' . $cronPhpCli . ' scripts/auto_import.php >> ' . escapeshellarg($cronLogFile) . ' 2>&1';
 $cronScheduleExample = '*/10 * * * * ' . $cronCommandExample;
 $cronTargetExists = is_file($cronTargetFile);
 
@@ -39,7 +39,7 @@ require __DIR__ . '/includes/header.php';
         </td>
       </tr>
     </table>
-    <p class="admin-form-note">サーバーのcron設定画面で「10分ごと」を選び、コピーしたコマンドを貼り付けて保存してください。</p>
+    <p class="admin-form-note">サーバーのcron設定画面で「10分ごと」を選び、コピーしたコマンドを貼り付けて保存してください。古いcronが残っている場合は削除してください。</p>
   </div>
 
   <details>

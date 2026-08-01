@@ -22,11 +22,7 @@ $defaultFixedPages = [
 ];
 
 try {
-    $sourceWhere = function_exists('items_product_source_where') ? items_product_source_where() : '';
-    $sourceWhereSql = $sourceWhere !== '' ? ' WHERE ' . $sourceWhere : '';
-    $publishedItemCount = (int)db()->query('SELECT COUNT(*) FROM items' . $sourceWhereSql)->fetchColumn();
-    // トップページで実際に公開表示する最大件数（PC 4列×8段）に合わせる。
-    $sitePostCount = min(32, max(0, $publishedItemCount));
+    $sitePostCount = (int)db()->query('SELECT COUNT(*) FROM items')->fetchColumn();
 } catch (Throwable) {
     $sitePostCount = null;
 }
